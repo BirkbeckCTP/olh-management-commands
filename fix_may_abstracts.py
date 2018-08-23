@@ -6,11 +6,23 @@ from django.core.management.base import BaseCommand
 from journal import models
 from submission import models as submission_models
 
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+
 
 def find_article_in_dict(file_dict, article):
     for obj in file_dict:
         if obj['model'] == 'submission.article' and obj['pk'] == article.pk:
             print('Object {pk} found - {date}'.format(pk=article.pk, date=article.date_published))
+            return obj
+
+
+def update_article(article, obj):
+    if obj['fields'].get('abstract', None):
+        article.abstract = obj['fields'].get('abstract')
+        article.save()
+    else:
+        print('{fail}No abstract found.{end}'.format(fail=FAIL, end=ENDC))
 
 
 class Command(BaseCommand):
@@ -44,4 +56,5 @@ class Command(BaseCommand):
             articles = submission_models.Article.objects.filter(journal=journal, date_published__lte=date_affected)
 
             for article in articles:
-                find_article_in_dict(file_dict, article)
+                obj = find_article_in_dict(file_dict, article)
+                update_article(article, obj)
